@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meccanica dei Fluidi — Dalla Statica alla Dinamica</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0a1628;
+    --navy-mid: #0e1f3d;
+    --navy-light: #142952;
+    --electric: #00c8ff;
+    --electric-dim: #0088bb;
+    --gold: #ffd166;
+    --silver: #c8d8e8;
+    --white: #f0f8ff;
+    --glow: rgba(0,200,255,0.35);
+    --panel-bg: rgba(10,22,40,0.92);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--navy);
+    color: var(--white);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 16px;
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  /* ─── STARFIELD ─── */
+  #stars {
+    position: fixed; inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+  #stars span {
+    position: absolute;
+    border-radius: 50%;
+    background: #c8deff;
+    animation: twinkle linear infinite;
+    opacity: 0;
+  }
+
+  @keyframes twinkle {
+    0%,100% { opacity:0; } 50% { opacity:.6; }
+  }
+
+  /* ─── WIND TUNNEL HERO ─── */
+  #hero {
+    position: relative;
+    width: 100%;
+    height: 480px;
+    overflow: hidden;
+    z-index: 1;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    flex-direction: column;
+    background: linear-gradient(180deg, #060f20 0%, var(--navy) 100%);
+  }
+
+  #wind-tunnel {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  }
+
+  .streamline {
+    position: absolute;
+    height: 1.5px;
+    background: linear-gradient(90deg, transparent 0%, rgba(0,200,255,0.7) 40%, rgba(0,200,255,0.9) 60%, transparent 100%);
+    animation: flow linear infinite;
+    border-radius: 2px;
+  }
+
+  @keyframes flow {
+    0%   { transform: translateX(-100%); opacity: 0; }
+    5%   { opacity: 1; }
+    95%  { opacity: 1; }
+    100% { transform: translateX(200%); opacity: 0; }
+  }
+
+  #airfoil-wrap {
+    position: absolute;
+    left: 50%;
+    bottom: 18px;
+    transform: translateX(-50%);
+    z-index: 10;
+    filter: drop-shadow(0 0 18px rgba(0,200,255,0.55));
+  }
+
+  .hero-title {
+    position: relative;
+    z-index: 20;
+    text-align: center;
+    pointer-events: none;
+    margin-top: 32px;
+    width: 100%;
+  }
+
+  .hero-title h1 {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(1.4rem, 4vw, 2.6rem);
+    font-weight: 900;
+    letter-spacing: .12em;
+    color: var(--white);
+    text-shadow: 0 0 30px var(--electric), 0 2px 4px rgba(0,0,0,.8);
+    line-height: 1.15;
+  }
+
+  .hero-title p {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: clamp(.85rem, 2vw, 1.05rem);
+    font-weight: 400;
+    color: var(--silver);
+    letter-spacing: .05em;
+    margin-top: 6px;
+    opacity: .85;
+  }
+
+  .hero-badge {
+    display: inline-block;
+    margin-top: 12px;
+    font-family: 'Source Code Pro', monospace;
+    font-size: .7rem;
+    color: var(--electric);
+    border: 1px solid var(--electric-dim);
+    padding: 3px 12px;
+    border-radius: 20px;
+    letter-spacing: .1em;
+    background: rgba(0,200,255,.07);
+  }
+
+  /* ─── SECTION DIVIDER ─── */
+  .section-label {
+    text-align: center;
+    margin: 36px 0 16px;
+    font-family: 'Orbitron', monospace;
+    font-size: .75rem;
+    letter-spacing: .25em;
+    color: var(--electric-dim);
+    position: relative;
+    z-index: 1;
+  }
+  .section-label::before, .section-label::after {
+    content: '';
+    display: inline-block;
+    width: 60px; height: 1px;
+    background: var(--electric-dim);
+    vertical-align: middle;
+    margin: 0 12px;
+    opacity: .5;
+  }
+
+  /* ─── CARDS GRID ─── */
+  #cards-container {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 20px 60px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 22px;
+  }
+
+  .card {
+    background: linear-gradient(135deg, var(--navy-mid) 0%, rgba(14,31,61,0.95) 100%);
+    border: 1px solid rgba(0,200,255,.2);
+    border-radius: 14px;
+    padding: 24px 22px 20px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: transform .28s cubic-bezier(.4,0,.2,1), border-color .28s, box-shadow .28s;
+    opacity: 0;
+    transform: translateY(32px);
+  }
+
+  .card.revealed {
+    animation: slideUp .55s cubic-bezier(.4,0,.2,1) forwards;
+  }
+
+  @keyframes slideUp {
+    to { opacity:1; transform: translateY(0); }
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(0,200,255,.04), transparent);
+    opacity: 0;
+    transition: opacity .3s;
+  }
+
+  .card:hover {
+    transform: translateY(-5px) scale(1.015);
+    border-color: var(--electric);
+    box-shadow: 0 8px 40px rgba(0,200,255,.22), 0 0 0 1px rgba(0,200,255,.15);
+  }
+  .card:hover::before { opacity:1; }
+
+  .card-tag {
+    font-family: 'Source Code Pro', monospace;
+    font-size: .65rem;
+    letter-spacing: .15em;
+    color: var(--electric);
+    background: rgba(0,200,255,.1);
+    border-radius: 6px;
+    padding: 2px 8px;
+    display: inline-block;
+    margin-bottom: 10px;
+  }
+
+  .card h2 {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--white);
+    margin-bottom: 6px;
+    line-height: 1.25;
+  }
+
+  .card-formula {
+    font-family: 'Source Code Pro', monospace;
+    font-size: 1rem;
+    color: var(--gold);
+    background: rgba(255,209,102,.08);
+    border-left: 3px solid var(--gold);
+    padding: 6px 12px;
+    border-radius: 0 6px 6px 0;
+    margin: 10px 0 12px;
+    letter-spacing: .04em;
+  }
+
+  .card p {
+    font-size: .88rem;
+    color: var(--silver);
+    line-height: 1.55;
+    opacity: .88;
+  }
+
+  .card-cta {
+    margin-top: 14px;
+    font-size: .78rem;
+    font-family: 'Source Code Pro', monospace;
+    color: var(--electric-dim);
+    letter-spacing: .08em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: color .2s;
+  }
+  .card:hover .card-cta { color: var(--electric); }
+  .card-cta svg { transition: transform .2s; }
+  .card:hover .card-cta svg { transform: translateX(4px); }
+
+  .card-icon {
+    position: absolute;
+    top: 18px; right: 18px;
+    font-size: 1.6rem;
+    opacity: .18;
+    transition: opacity .3s;
+  }
+  .card:hover .card-icon { opacity: .35; }
+
+  /* ─── MODAL ─── */
+  #modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(6,15,32,.88);
+    backdrop-filter: blur(8px);
+    z-index: 1000;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 20px;
+    overflow-y: auto;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .3s;
+  }
+  #modal-overlay.open {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  #modal {
+    background: linear-gradient(160deg, #0c1a35 0%, #0a1628 100%);
+    border: 1px solid rgba(0,200,255,.35);
+    border-radius: 18px;
+    max-width: 780px;
+    width: 100%;
+    padding: 36px 36px 40px;
+    position: relative;
+    transform: translateY(24px) scale(.97);
+    transition: transform .35s cubic-bezier(.4,0,.2,1);
+    box-shadow: 0 30px 80px rgba(0,0,0,.7), 0 0 60px rgba(0,200,255,.08);
+    margin: auto;
+  }
+  #modal-overlay.open #modal {
+    transform: translateY(0) scale(1);
+  }
+
+  #modal-close {
+    position: absolute;
+    top: 16px; right: 18px;
+    background: rgba(0,200,255,.1);
+    border: 1px solid rgba(0,200,255,.25);
+    color: var(--electric);
+    border-radius: 8px;
+    width: 34px; height: 34px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .2s, transform .2s;
+    font-family: monospace;
+    z-index: 5;
+  }
+  #modal-close:hover {
+    background: rgba(0,200,255,.22);
+    transform: scale(1.08);
+  }
+
+  #modal-tag {
+    font-family: 'Source Code Pro', monospace;
+    font-size: .65rem;
+    letter-spacing: .15em;
+    color: var(--electric);
+    background: rgba(0,200,255,.1);
+    border-radius: 6px;
+    padding: 3px 10px;
+    display: inline-block;
+    margin-bottom: 10px;
+  }
+
+  #modal h2 {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(1.15rem, 3vw, 1.55rem);
+    color: var(--white);
+    margin-bottom: 16px;
+    line-height: 1.25;
+  }
+
+  .modal-formula-box {
+    background: rgba(255,209,102,.07);
+    border: 1px solid rgba(255,209,102,.25);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin: 16px 0;
+    text-align: center;
+  }
+  .modal-formula-box .formula {
+    font-family: 'Source Code Pro', monospace;
+    font-size: clamp(1rem, 2.5vw, 1.3rem);
+    color: var(--gold);
+    letter-spacing: .05em;
+  }
+  .modal-formula-box .vars {
+    margin-top: 10px;
+    text-align: left;
+    font-size: .82rem;
+    color: var(--silver);
+    line-height: 1.7;
+  }
+
+  .modal-section {
+    margin-top: 20px;
+  }
+  .modal-section h3 {
+    font-family: 'Orbitron', monospace;
+    font-size: .8rem;
+    letter-spacing: .12em;
+    color: var(--electric);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .modal-section h3::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(0,200,255,.3), transparent);
+  }
+  .modal-section p, .modal-section li {
+    font-size: .9rem;
+    line-height: 1.65;
+    color: var(--silver);
+  }
+  .modal-section ul {
+    padding-left: 18px;
+  }
+  .modal-section li {
+    margin-bottom: 5px;
+  }
+  .modal-section li strong {
+    color: var(--white);
+  }
+
+  .modal-diagram {
+    margin-top: 18px;
+    background: rgba(0,200,255,.03);
+    border: 1px solid rgba(0,200,255,.12);
+    border-radius: 10px;
+    padding: 16px;
+    overflow-x: auto;
+  }
+  .modal-diagram svg {
+    display: block;
+    margin: 0 auto;
+    max-width: 100%;
+  }
+
+  .example-box {
+    background: rgba(0,200,255,.06);
+    border-left: 3px solid var(--electric);
+    border-radius: 0 8px 8px 0;
+    padding: 14px 16px;
+    margin-top: 14px;
+    font-size: .88rem;
+    color: var(--silver);
+    line-height: 1.6;
+  }
+  .example-box strong {
+    color: var(--electric);
+    font-family: 'Source Code Pro', monospace;
+    font-size: .8rem;
+    letter-spacing: .08em;
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  /* ─── FOOTER ─── */
+  footer {
+    position: relative; z-index:1;
+    text-align: center;
+    padding: 28px 20px;
+    font-size: .75rem;
+    font-family: 'Source Code Pro', monospace;
+    color: rgba(200,216,232,.35);
+    letter-spacing: .08em;
+    border-top: 1px solid rgba(0,200,255,.08);
+  }
+
+  @media (max-width: 600px) {
+    #cards-container { grid-template-columns: 1fr; }
+    #modal { padding: 26px 20px 30px; }
+    #hero { height: 400px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- STARFIELD -->
+<div id="stars"></div>
+
+<!-- HERO WIND TUNNEL -->
+<div id="hero">
+  <div id="wind-tunnel" id="wind-canvas"></div>
+
+  <div class="hero-title">
+    <h1>I Principi della<br>Meccanica dei Fluidi</h1>
+    <p>Dalla Statica alla Dinamica — Sei Leggi Fondamentali</p>
+    <div class="hero-badge">▸ CLICCA LE CARD PER APPROFONDIRE</div>
+  </div>
+</div>
+
+<!-- STATICA -->
+<div class="section-label">STATICA DEI FLUIDI — IDROSTATICA</div>
+<div id="cards-container" id="static-section">
+
+  <!-- STEVINO -->
+  <div class="card" data-key="stevino">
+    <span class="card-icon">🌊</span>
+    <div class="card-tag">IDROSTATICA · 01</div>
+    <h2>Legge di Stevino</h2>
+    <div class="card-formula">P = P₀ + ρgh</div>
+    <p>La pressione in un fluido cresce linearmente con la profondità. Più scendi, più il peso degli strati sovrastanti grava su di te.</p>
+    <div class="card-cta">
+      Scopri di più
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+  </div>
+
+  <!-- PASCAL -->
+  <div class="card" data-key="pascal">
+    <span class="card-icon">⚙️</span>
+    <div class="card-tag">IDROSTATICA · 02</div>
+    <h2>Principio di Pascal</h2>
+    <div class="card-formula">F₁/A₁ = F₂/A₂</div>
+    <p>La pressione applicata in un punto di un fluido confinato si trasmette inalterata in ogni direzione. Alla base di ogni sistema idraulico.</p>
+    <div class="card-cta">
+      Scopri di più
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+  </div>
+
+  <!-- ARCHIMEDE -->
+  <div class="card" data-key="archimede">
+    <span class="card-icon">⚓</span>
+    <div class="card-tag">IDROSTATICA · 03</div>
+    <h2>Principio di Archimede</h2>
+    <div class="card-formula">S = ρ · Vᵢₘₘ · g</div>
+    <p>Ogni corpo immerso riceve una spinta verso l'alto pari al peso del fluido che sposta. Spiega il galleggiamento di navi e palloni aerostatici.</p>
+    <div class="card-cta">
+      Scopri di più
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+  </div>
+
+</div>
+
+<!-- DINAMICA -->
+<div class="section-label">DINAMICA DEI FLUIDI — IDRODINAMICA</div>
+<div id="cards-container-dyn" style="position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:0 20px 80px;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:22px;">
+
+  <!-- CONTINUITÀ -->
+  <div class="card" data-key="continuita">
+    <span class="card-icon">🔀</span>
+    <div class="card-tag">IDRODINAMICA · 04</div>
+    <h2>Equazione di Continuità</h2>
+    <div class="card-formula">A₁v₁ = A₂v₂ = Q</div>
+    <p>In un condotto, la portata volumetrica è costante. Se il tubo si stringe, il fluido accelera per conservare la massa.</p>
+    <div class="card-cta">
+      Scopri di più
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+  </div>
+
+  <!-- BERNOULLI -->
+  <div class="card" data-key="bernoulli">
+    <span class="card-icon">✈️</span>
+    <div class="card-tag">IDRODINAMICA · 05</div>
+    <h2>Equazione di Bernoulli</h2>
+    <div class="card-formula">P + ½ρv² + ρgh = cost.</div>
+    <p>Conservazione dell'energia in un fluido ideale: dove la velocità è alta, la pressione è bassa. Alla base del volo degli aerei.</p>
+    <div class="card-cta">
+      Scopri di più
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+  </div>
+
+  <!-- TORRICELLI -->
+  <div class="card" data-key="torricelli">
+    <span class="card-icon">💧</span>
+    <div class="card-tag">IDRODINAMICA · 06</div>
+    <h2>Teorema di Torricelli</h2>
+    <div class="card-formula">v = √(2gh)</div>
+    <p>Caso particolare di Bernoulli: la velocità di efflusso da un foro equivale alla velocità di caduta libera dalla stessa altezza.</p>
+    <div class="card-cta">
+      Scopri di più
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL -->
+<div id="modal-overlay">
+  <div id="modal">
+    <button id="modal-close">✕</button>
+    <div id="modal-tag"></div>
+    <h2 id="modal-title"></h2>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<footer>MECCANICA DEI FLUIDI · STATICA & DINAMICA · INFOGRAFICA INTERATTIVA</footer>
+
+<script>
+/* ─── STARFIELD ─── */
+(function(){
+  const c = document.getElementById('stars');
+  for(let i=0;i<80;i++){
+    const s=document.createElement('span');
+    const sz=Math.random()*2+.5;
+    s.style.cssText=`width:${sz}px;height:${sz}px;left:${Math.random()*100}%;top:${Math.random()*100}%;animation-duration:${3+Math.random()*5}s;animation-delay:${Math.random()*6}s`;
+    c.appendChild(s);
+  }
+})();
+
+/* ─── WIND TUNNEL STREAMLINES ─── */
+(function(){
+  const tunnel = document.getElementById('wind-tunnel');
+  const H = 480;
+  const LINES = 32;
+  // Airfoil is centered at bottom: roughly y=360 (bottom 18px + half of 110px SVG ≈ 73px from bottom → y≈389)
+  const airfoilCenterY = H - 18 - 55; // 407
+  for(let i=0;i<LINES;i++){
+    const el=document.createElement('div');
+    el.className='streamline';
+    const yPos = 10 + (i/(LINES-1))*(H-20);
+    const dur = 1.6 + Math.random()*.9;
+    const delay = -Math.random()*dur*2;
+    const width = 60 + Math.random()*120;
+    const distFromCenter = Math.abs(yPos - airfoilCenterY);
+    const bend = distFromCenter < 90 ? (1-(distFromCenter/90))*14 : 0;
+    const translateY = (yPos < airfoilCenterY) ? -bend : bend;
+    el.style.cssText=`top:${yPos}px;width:${width}px;animation-duration:${dur}s;animation-delay:${delay}s;opacity:${.4+Math.random()*.5};transform:translateY(${translateY}px)`;
+    tunnel.appendChild(el);
+  }
+})();
+
+/* ─── AIRFOIL SVG ─── */
+(function(){
+  const wrap = document.createElement('div');
+  wrap.id = 'airfoil-wrap';
+  wrap.innerHTML = `
+  <svg width="340" height="110" viewBox="0 0 340 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- Airfoil NACA shape -->
+    <path d="M 20 55
+      C 60 20, 130 10, 200 30
+      C 250 42, 300 50, 320 55
+      C 300 60, 250 68, 200 80
+      C 130 100, 60 90, 20 55 Z"
+      fill="rgba(14,31,61,0.92)"
+      stroke="rgba(0,200,255,0.75)"
+      stroke-width="1.5"/>
+    <!-- Camber line -->
+    <path d="M 20 55 C 100 40, 220 42, 320 55"
+      stroke="rgba(0,200,255,0.2)" stroke-width="1" stroke-dasharray="4 4"/>
+    <!-- Pressure arrows (bottom, high) -->
+    <g stroke="rgba(255,209,102,0.6)" stroke-width="1.2" marker-end="url(#arrG)">
+      <line x1="80" y1="96" x2="80" y2="78"/>
+      <line x1="130" y1="100" x2="130" y2="82"/>
+      <line x1="180" y1="96" x2="180" y2="78"/>
+      <line x1="230" y1="88" x2="230" y2="72"/>
+      <line x1="270" y1="78" x2="270" y2="65"/>
+    </g>
+    <!-- Suction arrows (top, low) -->
+    <g stroke="rgba(0,200,255,0.6)" stroke-width="1.2" marker-end="url(#arrB)">
+      <line x1="80" y1="14" x2="80" y2="30"/>
+      <line x1="130" y1="8" x2="130" y2="25"/>
+      <line x1="180" y1="14" x2="180" y2="30"/>
+      <line x1="230" y1="22" x2="230" y2="36"/>
+      <line x1="270" y1="30" x2="270" y2="44"/>
+    </g>
+    <!-- Labels -->
+    <text x="320" y="30" fill="rgba(0,200,255,0.85)" font-family="'Source Code Pro',monospace" font-size="9" text-anchor="end">P BASSA · v alta</text>
+    <text x="320" y="85" fill="rgba(255,209,102,0.85)" font-family="'Source Code Pro',monospace" font-size="9" text-anchor="end">P ALTA · v bassa</text>
+    <defs>
+      <marker id="arrG" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+        <path d="M0,0 L0,6 L6,3 z" fill="rgba(255,209,102,0.7)"/>
+      </marker>
+      <marker id="arrB" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+        <path d="M0,0 L0,6 L6,3 z" fill="rgba(0,200,255,0.7)"/>
+      </marker>
+    </defs>
+  </svg>`;
+  document.getElementById('wind-tunnel').appendChild(wrap);
+})();
+
+/* ─── SCROLL REVEAL ─── */
+(function(){
+  const cards = document.querySelectorAll('.card');
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach((e,i)=>{
+      if(e.isIntersecting){
+        setTimeout(()=>{ e.target.classList.add('revealed'); }, i*90);
+        io.unobserve(e.target);
+      }
+    });
+  },{threshold:.15});
+  cards.forEach(c=>io.observe(c));
+})();
+
+/* ─── MODAL DATA ─── */
+const DATA = {
+  stevino: {
+    tag: 'IDROSTATICA · LEGGE DI STEVINO',
+    title: 'La Legge di Stevino',
+    formula: 'P = P₀ + ρ · g · h',
+    vars: `
+      <b>P</b> — Pressione totale alla profondità h [Pa = N/m²]<br>
+      <b>P₀</b> — Pressione sulla superficie del liquido [Pa]<br>
+      <b>ρ</b> — Densità del fluido [kg/m³]<br>
+      <b>g</b> — Accelerazione gravitazionale [9.81 m/s²]<br>
+      <b>h</b> — Profondità dalla superficie [m]
+    `,
+    spiegazione: `Il peso degli strati superiori del fluido grava su quelli inferiori a causa della gravità. All'aumentare della profondità cresce il peso del fluido sovrastante, e quindi la pressione. La variazione di pressione dipende <em>solo</em> dalla profondità e dalla densità del liquido, indipendentemente dalla forma del contenitore.`,
+    applicazioni: [
+      `<strong>Subacquea:</strong> Un sub a 10 m di profondità subisce circa 1 atm aggiuntiva (≈ 100 000 Pa) oltre a quella atmosferica.`,
+      `<strong>Dighe:</strong> La base deve essere molto più spessa della cima perché la pressione idrostatica è massima sul fondo.`,
+      `<strong>Vasi comunicanti:</strong> I liquidi negli stessi vasi comunicanti raggiungono lo stesso livello perché la pressione in fondo deve essere uguale.`
+    ],
+    diagram: `<svg viewBox="0 0 360 220" width="360" height="220" xmlns="http://www.w3.org/2000/svg" font-family="'Rajdhani',sans-serif">
+      <!-- Container -->
+      <rect x="80" y="20" width="160" height="180" fill="none" stroke="rgba(0,200,255,0.4)" stroke-width="1.5" rx="3"/>
+      <!-- Water -->
+      <rect x="81" y="21" width="158" height="178" fill="rgba(0,100,200,0.18)" rx="2"/>
+      <!-- Depth lines -->
+      <line x1="240" y1="21" x2="320" y2="21" stroke="rgba(0,200,255,0.5)" stroke-width="1" stroke-dasharray="4,3"/>
+      <line x1="240" y1="81" x2="320" y2="81" stroke="rgba(0,200,255,0.5)" stroke-width="1" stroke-dasharray="4,3"/>
+      <line x1="240" y1="141" x2="320" y2="141" stroke="rgba(0,200,255,0.5)" stroke-width="1" stroke-dasharray="4,3"/>
+      <line x1="240" y1="198" x2="320" y2="198" stroke="rgba(0,200,255,0.5)" stroke-width="1" stroke-dasharray="4,3"/>
+      <!-- h arrows -->
+      <line x1="295" y1="21" x2="295" y2="81" stroke="rgba(255,209,102,0.7)" stroke-width="1.5" marker-end="url(#arrD)"/>
+      <line x1="295" y1="81" x2="295" y2="141" stroke="rgba(255,209,102,0.7)" stroke-width="1.5" marker-end="url(#arrD)"/>
+      <line x1="295" y1="141" x2="295" y2="198" stroke="rgba(255,209,102,0.7)" stroke-width="1.5" marker-end="url(#arrD)"/>
+      <text x="305" y="55" fill="rgba(255,209,102,0.9)" font-size="11">h₁</text>
+      <text x="305" y="115" fill="rgba(255,209,102,0.9)" font-size="11">h₂</text>
+      <text x="305" y="175" fill="rgba(255,209,102,0.9)" font-size="11">h₃</text>
+      <!-- Pressure gauges (circles) -->
+      <circle cx="86" cy="81" r="10" fill="rgba(0,200,255,0.15)" stroke="rgba(0,200,255,0.6)" stroke-width="1.2"/>
+      <circle cx="86" cy="141" r="13" fill="rgba(0,200,255,0.2)" stroke="rgba(0,200,255,0.7)" stroke-width="1.4"/>
+      <circle cx="86" cy="198" r="16" fill="rgba(0,200,255,0.28)" stroke="rgba(0,200,255,0.85)" stroke-width="1.6"/>
+      <!-- P labels -->
+      <text x="50" y="85" fill="rgba(200,220,240,0.85)" font-size="10" text-anchor="middle">P₁</text>
+      <text x="50" y="145" fill="rgba(200,220,240,0.85)" font-size="10" text-anchor="middle">P₂&gt;P₁</text>
+      <text x="50" y="202" fill="rgba(200,220,240,0.85)" font-size="10" text-anchor="middle">P₃&gt;P₂</text>
+      <!-- Surface label -->
+      <text x="160" y="16" fill="rgba(0,200,255,0.75)" font-size="10" text-anchor="middle">P₀</text>
+      <defs>
+        <marker id="arrD" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L6,3 z" fill="rgba(255,209,102,0.8)"/>
+        </marker>
+      </defs>
+    </svg>`,
+    example: `Un sommozzatore scende a h = 30 m in acqua di mare (ρ ≈ 1025 kg/m³).<br>
+    <b>P = 101 325 + 1025 × 9.81 × 30 ≈ 403 300 Pa ≈ 3.98 atm</b><br>
+    Il suo corpo è sottoposto a quasi 4 volte la pressione atmosferica.`
+  },
+
+  pascal: {
+    tag: 'IDROSTATICA · PRINCIPIO DI PASCAL',
+    title: 'Il Principio di Pascal',
+    formula: 'F₁/A₁ = F₂/A₂  →  F₂ = F₁ · (A₂/A₁)',
+    vars: `
+      <b>F₁, F₂</b> — Forze applicate sulle superfici [N]<br>
+      <b>A₁, A₂</b> — Aree delle superfici [m²]<br>
+      <b>P</b> — Pressione trasmessa (uguale ovunque nel fluido) [Pa]
+    `,
+    spiegazione: `Se si applica una forza F₁ su una piccola area A₁, si genera una pressione P = F₁/A₁. Poiché un liquido è incomprimibile, questa pressione si propaga intatta in ogni direzione. Su una superficie più grande A₂ si genera quindi una forza F₂ proporzionalmente amplificata. Si tratta di una vera moltiplicazione meccanica della forza, senza però amplificare l'energia (lo spostamento del pistone grande è proporzionalmente minore).`,
+    applicazioni: [
+      `<strong>Cric idraulico:</strong> Applicando 100 N su un pistoncino da 1 cm², si genera la stessa pressione su un pistone da 100 cm², ottenendo 10 000 N.`,
+      `<strong>Freni idraulici auto:</strong> La pressione del piede si amplifica fino alle pinze dei dischi tramite olio incomprimibile.`,
+      `<strong>Torchio industriale:</strong> Comprimere fogli di metallo con forze enormi applicando forze piccole manualmente.`
+    ],
+    diagram: `<svg viewBox="0 0 360 180" width="360" height="180" xmlns="http://www.w3.org/2000/svg" font-family="'Rajdhani',sans-serif">
+      <!-- Fluid body -->
+      <path d="M60,140 L60,80 L140,80 L140,50 L220,50 L220,80 L300,80 L300,140 Z"
+        fill="rgba(0,100,200,0.18)" stroke="rgba(0,200,255,0.45)" stroke-width="1.5"/>
+      <!-- Left piston (small) -->
+      <rect x="90" y="50" width="20" height="32" fill="rgba(0,200,255,0.25)" stroke="rgba(0,200,255,0.7)" stroke-width="1.4" rx="2"/>
+      <text x="100" y="47" fill="rgba(200,220,240,0.85)" font-size="10" text-anchor="middle">A₁</text>
+      <!-- Arrow down left -->
+      <line x1="100" y1="18" x2="100" y2="48" stroke="rgba(255,209,102,0.85)" stroke-width="2" marker-end="url(#aD2)"/>
+      <text x="115" y="32" fill="rgba(255,209,102,0.9)" font-size="11">F₁</text>
+      <!-- Right piston (large) -->
+      <rect x="230" y="20" width="40" height="62" fill="rgba(0,200,255,0.2)" stroke="rgba(0,200,255,0.7)" stroke-width="1.4" rx="2"/>
+      <text x="250" y="17" fill="rgba(200,220,240,0.85)" font-size="10" text-anchor="middle">A₂ &gt;&gt; A₁</text>
+      <!-- Arrow up right -->
+      <line x1="250" y1="18" x2="250" y2="4" stroke="rgba(255,100,100,0.85)" stroke-width="2" marker-end="url(#aU2)"/>
+      <text x="265" y="15" fill="rgba(255,130,130,0.9)" font-size="11">F₂</text>
+      <!-- Pressure lines -->
+      <text x="180" y="120" fill="rgba(0,200,255,0.6)" font-size="10" text-anchor="middle">P trasmessa ovunque</text>
+      <defs>
+        <marker id="aD2" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto">
+          <path d="M0,0 L0,7 L7,3.5 z" fill="rgba(255,209,102,0.9)"/>
+        </marker>
+        <marker id="aU2" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto">
+          <path d="M7,7 L7,0 L0,3.5 z" fill="rgba(255,130,130,0.9)"/>
+        </marker>
+      </defs>
+    </svg>`,
+    example: `Un cric idraulico ha A₁ = 2 cm² e A₂ = 200 cm². Applicando F₁ = 150 N:<br>
+    <b>F₂ = 150 × (200/2) = 15 000 N ≈ 1530 kgf</b><br>
+    Con la forza di una mano si solleva un'intera automobile.`
+  },
+
+  archimede: {
+    tag: 'IDROSTATICA · PRINCIPIO DI ARCHIMEDE',
+    title: 'Il Principio di Archimede',
+    formula: 'S = ρ_fluido · V_imm · g',
+    vars: `
+      <b>S</b> — Spinta di Archimede (forza verso l'alto) [N]<br>
+      <b>ρ_fluido</b> — Densità del fluido [kg/m³]<br>
+      <b>V_imm</b> — Volume immerso nel fluido [m³]<br>
+      <b>g</b> — Accelerazione gravitazionale [9.81 m/s²]
+    `,
+    spiegazione: `La pressione del fluido aumenta con la profondità (legge di Stevino). La faccia inferiore di un oggetto immerso è a maggiore profondità di quella superiore, quindi subisce una pressione maggiore verso l'alto. La forza risultante netta è verso l'alto. Il corpo galleggia se S ≥ Peso, ovvero se ρ_corpo ≤ ρ_fluido.`,
+    applicazioni: [
+      `<strong>Navi d'acciaio:</strong> Pur essendo fatte di un materiale più denso dell'acqua, la forma dello scafo racchiude aria, abbassando la densità media.`,
+      `<strong>Sottomarini:</strong> Regolano la profondità riempiendo/svuotando le casse di zavorra, variando V_imm e quindi S.`,
+      `<strong>Mongolfiere:</strong> L'aria calda interna (meno densa) genera una spinta aerostatica sufficiente a sollevare tutto il sistema.`
+    ],
+    diagram: `<svg viewBox="0 0 360 200" width="360" height="200" xmlns="http://www.w3.org/2000/svg" font-family="'Rajdhani',sans-serif">
+      <!-- Water -->
+      <rect x="40" y="60" width="280" height="130" fill="rgba(0,100,200,0.18)" stroke="rgba(0,200,255,0.35)" stroke-width="1.2" rx="4"/>
+      <text x="190" y="80" fill="rgba(0,200,255,0.5)" font-size="10" text-anchor="middle">ρ_fluido</text>
+      <!-- Object -->
+      <rect x="140" y="80" width="80" height="80" fill="rgba(200,220,240,0.12)" stroke="rgba(200,220,240,0.55)" stroke-width="1.4" rx="4"/>
+      <text x="180" y="126" fill="rgba(200,220,240,0.8)" font-size="10" text-anchor="middle">CORPO</text>
+      <!-- Weight arrow (down) -->
+      <line x1="180" y1="165" x2="180" y2="195" stroke="rgba(255,100,100,0.85)" stroke-width="2" marker-end="url(#aDR)"/>
+      <text x="192" y="186" fill="rgba(255,130,130,0.9)" font-size="11">P = mg</text>
+      <!-- Buoyancy arrow (up) -->
+      <line x1="180" y1="78" x2="180" y2="44" stroke="rgba(0,200,255,0.85)" stroke-width="2.5" marker-end="url(#aUR)"/>
+      <text x="192" y="58" fill="rgba(0,200,255,0.9)" font-size="11">S = ρgV</text>
+      <!-- Pressure low top -->
+      <line x1="100" y1="82" x2="100" y2="94" stroke="rgba(0,200,255,0.5)" stroke-width="1" marker-end="url(#aUR)"/>
+      <line x1="260" y1="82" x2="260" y2="94" stroke="rgba(0,200,255,0.5)" stroke-width="1" marker-end="url(#aUR)"/>
+      <!-- Pressure high bottom -->
+      <line x1="100" y1="158" x2="100" y2="146" stroke="rgba(0,200,255,0.75)" stroke-width="1.8" marker-end="url(#aUR)"/>
+      <line x1="260" y1="158" x2="260" y2="146" stroke="rgba(0,200,255,0.75)" stroke-width="1.8" marker-end="url(#aUR)"/>
+      <defs>
+        <marker id="aDR" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto">
+          <path d="M0,0 L0,7 L7,3.5 z" fill="rgba(255,130,130,0.9)"/>
+        </marker>
+        <marker id="aUR" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto">
+          <path d="M7,7 L7,0 L0,3.5 z" fill="rgba(0,200,255,0.9)"/>
+        </marker>
+      </defs>
+    </svg>`,
+    example: `Una sfera di ferro (ρ = 7800 kg/m³, r = 0.1 m, V = 4.19×10⁻³ m³) immersa in acqua:<br>
+    <b>S = 1000 × 4.19×10⁻³ × 9.81 ≈ 41.1 N</b><br>
+    Peso = 7800 × 4.19×10⁻³ × 9.81 ≈ 320 N. Affonda, ma pesa 41 N in meno grazie alla spinta.`
+  },
+
+  continuita: {
+    tag: 'IDRODINAMICA · EQUAZIONE DI CONTINUITÀ',
+    title: 'Equazione di Continuità',
+    formula: 'A₁ · v₁ = A₂ · v₂ = Q (costante)',
+    vars: `
+      <b>A₁, A₂</b> — Sezioni trasversali del condotto [m²]<br>
+      <b>v₁, v₂</b> — Velocità del fluido nelle sezioni [m/s]<br>
+      <b>Q</b> — Portata volumetrica [m³/s] — si conserva
+    `,
+    spiegazione: `Deriva dalla conservazione della massa. Per un fluido incomprimibile (come l'acqua), il volume che attraversa qualsiasi sezione del condotto per unità di tempo deve essere costante. Quindi la velocità deve aumentare quando la sezione si riduce, e viceversa. In simboli: se A₂ = A₁/4, allora v₂ = 4·v₁.`,
+    applicazioni: [
+      `<strong>Ugello da giardino:</strong> Stringendo l'uscita del tubo con il pollice (A diminuisce), l'acqua schizza più lontano (v aumenta).`,
+      `<strong>Sistema circolatorio:</strong> Il sangue scorre a ~40 cm/s nelle arterie, ma rallenta a ~0.07 cm/s nei capillari (area totale enormissima).`,
+      `<strong>Effetto Venturi:</strong> La strozzatura in un condotto accelera il fluido, creando una depressione usata in carburatori e misuratori di portata.`
+    ],
+    diagram: `<svg viewBox="0 0 360 140" width="360" height="140" xmlns="http://www.w3.org/2000/svg" font-family="'Rajdhani',sans-serif">
+      <!-- Tube outline -->
+      <path d="M20,30 L120,30 Q160,30 160,60 L160,80 Q160,110 120,110 L20,110 Z"
+        fill="none" stroke="rgba(0,200,255,0.4)" stroke-width="1.5"/>
+      <path d="M160,60 L200,60 L200,80 L160,80" fill="none" stroke="rgba(0,200,255,0.4)" stroke-width="1.5"/>
+      <path d="M200,60 Q240,60 240,40 L340,40 L340,100 Q240,100 240,80 L200,80"
+        fill="none" stroke="rgba(0,200,255,0.4)" stroke-width="1.5"/>
+      <!-- Water fill -->
+      <path d="M20,31 L120,31 Q159,31 159,60 L159,80 Q159,109 120,109 L20,109 Z"
+        fill="rgba(0,100,200,0.15)"/>
+      <rect x="160" y="61" width="40" height="18" fill="rgba(0,100,200,0.15)"/>
+      <path d="M200,61 Q239,61 239,41 L339,41 L339,99 Q239,99 239,79 L200,79"
+        fill="rgba(0,100,200,0.15)"/>
+      <!-- v1 arrow -->
+      <line x1="40" y1="70" x2="100" y2="70" stroke="rgba(0,200,255,0.85)" stroke-width="2" marker-end="url(#aC1)"/>
+      <text x="60" y="63" fill="rgba(200,220,240,0.9)" font-size="11">v₁ (lento)</text>
+      <text x="30" y="85" fill="rgba(0,200,255,0.7)" font-size="10">A₁</text>
+      <!-- v2 arrow -->
+      <line x1="168" y1="70" x2="192" y2="70" stroke="rgba(255,209,102,0.9)" stroke-width="3" marker-end="url(#aC2)"/>
+      <!-- v3 arrow -->
+      <line x1="215" y1="70" x2="300" y2="70" stroke="rgba(0,200,255,0.85)" stroke-width="2" marker-end="url(#aC1)"/>
+      <text x="240" y="63" fill="rgba(200,220,240,0.9)" font-size="11">v₃ (lento)</text>
+      <text x="220" y="52" fill="rgba(0,200,255,0.7)" font-size="10">A₃</text>
+      <!-- Narrow label -->
+      <text x="176" y="53" fill="rgba(255,209,102,0.85)" font-size="10" text-anchor="middle">v₂ max</text>
+      <text x="176" y="100" fill="rgba(255,209,102,0.7)" font-size="10" text-anchor="middle">A₂ min</text>
+      <defs>
+        <marker id="aC1" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto">
+          <path d="M0,0 L0,7 L7,3.5 z" fill="rgba(0,200,255,0.9)"/>
+        </marker>
+        <marker id="aC2" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto">
+          <path d="M0,0 L0,7 L7,3.5 z" fill="rgba(255,209,102,0.9)"/>
+        </marker>
+      </defs>
+    </svg>`,
+    example: `Un tubo passa da A₁ = 50 cm² a A₂ = 5 cm² (strozzatura 10×). Se v₁ = 0.4 m/s:<br>
+    <b>Q = 50×10⁻⁴ × 0.4 = 2×10⁻³ m³/s</b><br>
+    <b>v₂ = Q/A₂ = 2×10⁻³ / 5×10⁻⁴ = 4 m/s</b> — 10 volte più veloce.`
+  },
+
+  bernoulli: {
+    tag: 'IDRODINAMICA · EQUAZIONE DI BERNOULLI',
+    title: 'Equazione di Bernoulli',
+    formula: 'P + ½ρv² + ρgh = costante',
+    vars: `
+      <b>P</b> — Pressione statica del fluido [Pa]<br>
+      <b>½ρv²</b> — Pressione dinamica (energia cinetica per unità di volume) [Pa]<br>
+      <b>ρgh</b> — Pressione idrostatica (energia potenziale per unità di volume) [Pa]<br>
+      <b>ρ</b> — Densità del fluido [kg/m³]<br>
+      <b>v</b> — Velocità del fluido [m/s]<br>
+      <b>h</b> — Quota [m]
+    `,
+    spiegazione: `È l'applicazione del principio di conservazione dell'energia a un fluido ideale stazionario. La somma di energia di pressione, cinetica e potenziale per unità di volume è costante lungo una linea di flusso. In un condotto orizzontale (h costante): se la velocità aumenta (strozzatura), la pressione statica deve diminuire. Alta velocità = bassa pressione.`,
+    applicazioni: [
+      `<strong>Portanza aerodinamica:</strong> L'ala deflette il flusso d'aria; l'aria sopra scorre più veloce → P bassa. Sotto scorre più lenta → P alta. La differenza genera la portanza.`,
+      `<strong>Effetto Venturi / Carburatori:</strong> Un restringimento accelera l'aria creando una depressione che aspira il carburante dal serbatoio.`,
+      `<strong>Ugelli di Laval:</strong> Nei motori a reazione, la geometria convergente-divergente sfrutta Bernoulli per accelerare i gas a velocità supersoniche.`
+    ],
+    diagram: `<svg viewBox="0 0 360 160" width="360" height="160" xmlns="http://www.w3.org/2000/svg" font-family="'Rajdhani',sans-serif">
+      <!-- Airfoil -->
+      <path d="M 30 80 C 80 45, 160 38, 230 58 C 280 70, 320 76, 340 80 C 320 84, 280 90, 230 102 C 160 122, 80 115, 30 80 Z"
+        fill="rgba(14,31,61,0.85)" stroke="rgba(0,200,255,0.7)" stroke-width="1.4"/>
+      <!-- Top streamlines (fast, blue, close together) -->
+      <path d="M 0 48 Q 80 32, 200 46 Q 280 55, 360 50" fill="none" stroke="rgba(0,200,255,0.55)" stroke-width="1.2"/>
+      <path d="M 0 38 Q 80 20, 200 35 Q 280 44, 360 38" fill="none" stroke="rgba(0,200,255,0.45)" stroke-width="1"/>
+      <path d="M 0 28 Q 80 10, 200 24 Q 280 33, 360 26" fill="none" stroke="rgba(0,200,255,0.35)" stroke-width=".8"/>
+      <!-- Bottom streamlines (slow, gold, far apart) -->
+      <path d="M 0 112 Q 80 128, 200 114 Q 280 106, 360 112" fill="none" stroke="rgba(255,209,102,0.55)" stroke-width="1.2"/>
+      <path d="M 0 130 Q 80 148, 200 134 Q 280 126, 360 132" fill="none" stroke="rgba(255,209,102,0.45)" stroke-width="1"/>
+      <!-- Labels -->
+      <text x="5" y="22" fill="rgba(0,200,255,0.85)" font-family="'Source Code Pro',monospace" font-size="10">v alta → P bassa</text>
+      <text x="5" y="148" fill="rgba(255,209,102,0.85)" font-family="'Source Code Pro',monospace" font-size="10">v bassa → P alta</text>
+      <!-- Lift arrow -->
+      <line x1="185" y1="70" x2="185" y2="20" stroke="rgba(100,255,160,0.85)" stroke-width="2.5" marker-end="url(#aL)"/>
+      <text x="196" y="44" fill="rgba(100,255,160,0.9)" font-size="11">PORTANZA</text>
+      <defs>
+        <marker id="aL" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto">
+          <path d="M7,7 L7,0 L0,3.5 z" fill="rgba(100,255,160,0.9)"/>
+        </marker>
+      </defs>
+    </svg>`,
+    example: `Un'ala in volo: sopra v₁ = 80 m/s, sotto v₂ = 60 m/s (aria: ρ = 1.225 kg/m³).<br>
+    <b>ΔP = ½ρ(v₁² − v₂²) = ½ × 1.225 × (6400−3600) = 1715 Pa</b><br>
+    Su un'ala da 30 m²: <b>L = 1715 × 30 ≈ 51 450 N ≈ 5.25 tonnellate di portanza</b>.`
+  },
+
+  torricelli: {
+    tag: 'IDRODINAMICA · TEOREMA DI TORRICELLI',
+    title: 'Teorema di Torricelli',
+    formula: 'v = √(2gh)',
+    vars: `
+      <b>v</b> — Velocità di uscita del fluido dal foro [m/s]<br>
+      <b>g</b> — Accelerazione gravitazionale [9.81 m/s²]<br>
+      <b>h</b> — Altezza della superficie libera sopra il foro [m]
+    `,
+    spiegazione: `Si ottiene applicando Bernoulli tra la superficie libera del liquido (dove v ≈ 0 e P = P_atm) e il foro di uscita (dove P = P_atm). I termini di pressione si cancellano e si ottiene v = √(2gh): la stessa velocità di un corpo che cade liberamente da altezza h. Man mano che il livello scende, il getto perde velocità.`,
+    applicazioni: [
+      `<strong>Svuotamento cisterne:</strong> Calcolo del tempo di svuotamento di un serbatoio integrando l'equazione differenziale dh/dt ∝ −√h.`,
+      `<strong>Impianti idraulici domestici:</strong> La pressione ai rubinetti dipende dall'altezza del serbatoio sul tetto: maggiore h, maggiore v e quindi Q.`,
+      `<strong>Diga con scarico:</strong> La velocità dell'acqua dallo scarico di fondo è determinata dall'altezza del pelo libero dell'invaso.`
+    ],
+    diagram: `<svg viewBox="0 0 360 200" width="360" height="200" xmlns="http://www.w3.org/2000/svg" font-family="'Rajdhani',sans-serif">
+      <!-- Tank -->
+      <rect x="60" y="20" width="120" height="160" fill="rgba(0,100,200,0.16)" stroke="rgba(0,200,255,0.45)" stroke-width="1.5" rx="3"/>
+      <!-- Water level -->
+      <rect x="61" y="21" width="118" height="110" fill="rgba(0,100,200,0.22)" rx="2"/>
+      <line x1="60" y1="130" x2="180" y2="130" stroke="rgba(0,200,255,0.6)" stroke-width="1.5" stroke-dasharray="4,3"/>
+      <text x="190" y="134" fill="rgba(0,200,255,0.75)" font-size="10">pelo libero</text>
+      <!-- h arrow -->
+      <line x1="45" y1="130" x2="45" y2="178" stroke="rgba(255,209,102,0.8)" stroke-width="1.5" marker-end="url(#aTh)"/>
+      <line x1="45" y1="130" x2="45" y2="82" stroke="rgba(255,209,102,0.8)" stroke-width="1.5" marker-start="url(#aTh)"/>
+      <text x="22" y="160" fill="rgba(255,209,102,0.9)" font-size="12" font-weight="700">h</text>
+      <!-- Hole -->
+      <rect x="175" y="174" width="14" height="8" fill="rgba(0,200,255,0.3)" stroke="rgba(0,200,255,0.75)" stroke-width="1.2" rx="2"/>
+      <!-- Jet -->
+      <path d="M 189 178 Q 230 180, 270 200" fill="none" stroke="rgba(0,200,255,0.8)" stroke-width="2.5"/>
+      <line x1="252" y1="192" x2="276" y2="202" stroke="rgba(0,200,255,0.85)" stroke-width="2" marker-end="url(#aTv)"/>
+      <text x="280" y="198" fill="rgba(0,200,255,0.9)" font-size="11">v = √(2gh)</text>
+      <!-- P_atm label top -->
+      <text x="120" y="17" fill="rgba(200,220,240,0.6)" font-size="9" text-anchor="middle">P_atm</text>
+      <!-- P_atm label hole -->
+      <text x="220" y="170" fill="rgba(200,220,240,0.6)" font-size="9">P_atm</text>
+      <defs>
+        <marker id="aTh" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto">
+          <path d="M0,0 L0,7 L7,3.5 z" fill="rgba(255,209,102,0.9)"/>
+        </marker>
+        <marker id="aTv" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto">
+          <path d="M0,0 L0,7 L7,3.5 z" fill="rgba(0,200,255,0.9)"/>
+        </marker>
+      </defs>
+    </svg>`,
+    example: `Serbatoio condominiale sul tetto: h = 15 m sopra il rubinetto.<br>
+    <b>v = √(2 × 9.81 × 15) = √294.3 ≈ 17.2 m/s</b><br>
+    Con un tubo da D = 1.5 cm (A = 1.77×10⁻⁴ m²):<br>
+    <b>Q = v · A ≈ 3.05×10⁻³ m³/s = 183 L/min</b>`
+  }
+};
+
+/* ─── MODAL LOGIC ─── */
+const overlay = document.getElementById('modal-overlay');
+const modalTag = document.getElementById('modal-tag');
+const modalTitle = document.getElementById('modal-title');
+const modalBody = document.getElementById('modal-body');
+const modalClose = document.getElementById('modal-close');
+
+function openModal(key) {
+  const d = DATA[key];
+  if(!d) return;
+  modalTag.textContent = d.tag;
+  modalTitle.textContent = d.title;
+  modalBody.innerHTML = `
+    <div class="modal-formula-box">
+      <div class="formula">${d.formula}</div>
+      <div class="vars">${d.vars}</div>
+    </div>
+    <div class="modal-section">
+      <h3>COME FUNZIONA</h3>
+      <p>${d.spiegazione}</p>
+    </div>
+    <div class="modal-diagram">${d.diagram}</div>
+    <div class="modal-section">
+      <h3>APPLICAZIONI PRATICHE</h3>
+      <ul>${d.applicazioni.map(a=>`<li>${a}</li>`).join('')}</ul>
+    </div>
+    <div class="modal-section">
+      <h3>ESEMPIO NUMERICO</h3>
+      <div class="example-box"><strong>▸ CALCOLO</strong>${d.example}</div>
+    </div>
+  `;
+  overlay.classList.add('open');
+  document.body.style.overflow='hidden';
+}
+
+function closeModal() {
+  overlay.classList.remove('open');
+  document.body.style.overflow='';
+}
+
+document.querySelectorAll('.card').forEach(card => {
+  card.addEventListener('click', ()=> openModal(card.dataset.key));
+});
+
+modalClose.addEventListener('click', closeModal);
+overlay.addEventListener('click', e => { if(e.target===overlay) closeModal(); });
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeModal(); });
+</script>
+</body>
+</html>
